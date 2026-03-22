@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Live Calcutta Results Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface2: #f2f2f0;
+  --surface3: #e8e8e5;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text: #1a1a1a;
+  --text2: #666;
+  --text3: #999;
+  --jack: #0066cc;
+  --lee: #007a47;
+  --sanjay: #cc3300;
+  --nathan: #7744cc;
+  --green: #007a47;
+  --red: #cc2200;
+  --gold: #b8860b;
+  --silver: #888;
+  --bronze: #8b5a2b;
+  --radius: 10px;
+  --radius-sm: 7px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { background: var(--bg); color: var(--text); font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; min-height: 100vh; }
+.page { max-width: 480px; margin: 0 auto; padding-bottom: 80px; }
+
+.header { background: #cc0000; padding: 12px 14px 10px; position: sticky; top: 0; z-index: 20; }
+.header-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.title { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.01em; }
+.subtitle { font-size: 10px; color: rgba(255,255,255,.75); margin-top: 3px; display: flex; align-items: center; gap: 5px; }
+.dot { width: 5px; height: 5px; border-radius: 50%; background: #7aff7a; flex-shrink: 0; animation: pulse 2.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.2} }
+.hbtn { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3); border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: 500; color: #fff; cursor: pointer; font-family: 'Outfit', sans-serif; white-space: nowrap; }
+.hbtn:active { opacity: .7; }
+
+.scoreboard { background: #111; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; padding: 0 4px; scrollbar-width: none; }
+.scoreboard::-webkit-scrollbar { display: none; }
+.score-item { display: inline-flex; flex-direction: column; padding: 6px 10px; border-right: 1px solid #333; vertical-align: top; min-width: 110px; }
+.score-item:last-child { border-right: none; }
+.score-label { font-size: 9px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #888; margin-bottom: 3px; }
+.score-teams { display: flex; flex-direction: column; gap: 2px; }
+.score-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.score-team { font-size: 12px; font-weight: 500; color: #ccc; }
+.score-team.winner { font-weight: 700; color: #fff; }
+.score-pts { font-size: 12px; font-weight: 700; color: #ccc; min-width: 20px; text-align: right; }
+.score-pts.winner { color: #7aff7a; }
+.score-upcoming { font-size: 10px; color: #aaa; padding: 8px 0 4px; }
+.score-owner { font-size: 9px; color: #666; margin-top: 2px; }
+
+.body { padding: 12px 10px 0; }
+
+.slabel { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: 7px; padding-left: 2px; display: flex; align-items: center; gap: 6px; }
+.slabel::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.lb-strips { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+.lbs { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.lbs-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.lbs-name { font-size: 11px; font-weight: 600; color: var(--text); }
+.lbs-sub { font-size: 10px; color: var(--text3); }
+.lbs-rows { padding: 2px 0; }
+.lbr { display: flex; align-items: center; gap: 8px; padding: 6px 12px; }
+.lbr-rank { font-size: 12px; font-weight: 700; min-width: 16px; text-align: center; }
+.lbr-rank.r1{color:var(--gold)}.lbr-rank.r2{color:var(--silver)}.lbr-rank.r3{color:var(--bronze)}.lbr-rank.r4{color:var(--text3)}
+.lbr-av { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+.lbr-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
+.lbr-track { width: 75px; height: 5px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+.lbr-fill { height: 100%; border-radius: 3px; transition: width .5s ease; }
+.lbr-val { font-size: 12px; font-weight: 600; min-width: 56px; text-align: right; }
+.lbr-val.pos{color:var(--green)}.lbr-val.neg{color:var(--red)}.lbr-val.neu{color:var(--text2)}
+
+.metrics { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; margin-bottom: 14px; }
+.metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+.metric-lbl { font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--text3); margin-bottom: 3px; }
+.metric-val { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1; letter-spacing: -.01em; }
+.metric-sub { font-size: 10px; color: var(--text2); margin-top: 2px; }
+
+.cards { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.card-hdr { padding: 12px 13px; cursor: pointer; user-select: none; }
+.card-hdr:active { background: var(--surface2); }
+
+.card-toprow { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 11px; }
+.av { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.cinfo { flex: 1; min-width: 0; }
+.cname { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -.01em; }
+.csub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.cright { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+.pts-big { font-size: 24px; font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+.pts-lbl { font-size: 9px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); }
+.roi-chip { padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.chip-pos{background:#e8f5ee;color:var(--green)}
+.chip-neg{background:#fdecea;color:var(--red)}
+.chip-neu{background:var(--surface2);color:var(--text2)}
+
+.fin { margin-bottom: 10px; }
+.fin-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.fin-lbl { font-size: 10px; font-weight: 600; color: var(--text3); min-width: 46px; letter-spacing: .02em; }
+.fin-track { flex: 1; height: 7px; background: var(--surface3); border-radius: 4px; overflow: hidden; }
+.fin-fill { height: 100%; border-radius: 4px; transition: width .65s cubic-bezier(.4,0,.2,1); }
+.fin-val { font-size: 11px; font-weight: 600; min-width: 40px; text-align: right; color: var(--text2); }
+.pnl-row { display: flex; justify-content: space-between; align-items: center; background: var(--surface2); border-radius: 6px; padding: 6px 10px; margin-top: 3px; }
+.pnl-lbl { font-size: 11px; color: var(--text2); }
+.pnl-val { font-size: 13px; font-weight: 700; }
+.pnl-pos{color:var(--green)}.pnl-neg{color:var(--red)}.pnl-neu{color:var(--text2)}
+
+.sbar { height: 3px; background: var(--surface3); border-radius: 2px; margin-bottom: 6px; }
+.sbar-fill { height: 100%; border-radius: 2px; transition: width .5s ease; }
+.tog-hint { text-align: center; font-size: 10px; color: var(--text3); }
+
+.card-detail { border-top: 1px solid var(--border); padding: 10px 13px; display: none; }
+.card-detail.open { display: block; }
+.dsec { margin-bottom: 9px; }
+.dsec:last-child { margin-bottom: 0; }
+.dsec-title { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); margin-bottom: 5px; display: flex; justify-content: space-between; }
+.tlist { display: flex; flex-direction: column; gap: 3px; }
+.trow { display: flex; justify-content: space-between; align-items: center; padding: 5px 9px; border-radius: 6px; font-size: 12px; }
+.trow.sc{background:#e8f5ee;border:1px solid #b3dfc5}
+.trow.al{background:var(--surface2);border:1px solid var(--border)}
+.trow.el{opacity:.35;background:var(--surface2);border:1px solid var(--border)}
+.tn{font-weight:500;color:var(--text);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.trow.sc .tn{color:var(--green)}
+.rpill{font-size:9px;background:#dbeeff;color:#0055aa;padding:1px 5px;border-radius:4px;font-weight:700}
+.tv{font-size:11px;color:var(--text2);flex-shrink:0;margin-left:4px;text-align:right}
+.trow.sc .tv{color:var(--green);font-weight:600}
+.trow.al .tv{color:var(--text3)}
+
+.sblock { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 8px; }
+.sblock-head { background: var(--surface2); padding: 8px 13px; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text2); border-bottom: 1px solid var(--border); }
+.brow { display: flex; gap: 10px; padding: 10px 13px; border-top: 1px solid var(--border); align-items: flex-start; }
+.brow:first-of-type{border-top:none}
+.bicon{font-size:17px;flex-shrink:0;margin-top:1px}
+.btitle{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.bdesc{font-size:11px;color:var(--text2);line-height:1.4;margin-bottom:3px}
+.bwin{font-size:11px;font-weight:600}
+.w-like{color:#0066aa}.w-tbd{color:var(--text3)}
+
+.grow{display:flex;justify-content:space-between;align-items:center;padding:8px 13px;border-top:1px solid var(--border)}
+.grow:first-of-type{border-top:none}
+.gteams{font-size:13px;font-weight:500;color:var(--text)}
+.gowners{font-size:10px;color:var(--text3);margin-top:1px}
+.gscore{font-size:12px;font-weight:700;color:var(--green)}
+.gtime{font-size:11px;color:var(--text3)}
+
+.api-banner{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px;margin-bottom:8px}
+.api-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
+.api-desc{font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.4}
+.api-row{display:flex;gap:6px}
+.api-inp{flex:1;min-width:0;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;font-family:'Outfit',sans-serif}
+.api-inp:focus{border-color:#0066cc}
+.api-inp::placeholder{color:var(--text3)}
+.api-btn{background:#0066cc;color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap}
+
+.err-banner{background:#fdecea;border:1px solid #f5b8b4;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:8px;font-size:12px;color:var(--red);line-height:1.4}
+.last-upd{font-size:10px;color:var(--text3);text-align:center;padding:6px 4px 0}
+.footer-note{font-size:10px;color:var(--text3);line-height:1.6;padding:8px 4px 0}
+.chgkey{display:block;text-align:center;padding:6px;font-size:10px;color:var(--text3);cursor:pointer;background:none;border:none;font-family:'Outfit',sans-serif;width:100%}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="title">🏀 Live Calcutta Tracker</div>
+        <div class="subtitle"><span class="dot"></span><span id="status-text">Loading…</span></div>
+      </div>
+      <button class="hbtn" id="refresh-btn" onclick="fetchAndRender()">↻ Refresh</button>
+    </div>
+  </div>
+  <div class="scoreboard" id="scoreboard-strip"></div>
+  <div class="body"><div id="root"><div style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">Loading…</div></div></div>
+</div>
+<script>
+const SC={r64:1,r32:2,s16:4,e8:8,f4:16,champ:24};
+const TOTAL_SHARES=187, TOTAL_SPEND=1296.98;
+const PC={
+  Jack:  {c:'#0066cc',av:'#dbeeff',avtxt:'#0055aa'},
+  Lee:   {c:'#007a47',av:'#e0f5ec',avtxt:'#005c34'},
+  Sanjay:{c:'#cc3300',av:'#fdecea',avtxt:'#aa2200'},
+  nathan:{c:'#7744cc',av:'#ede8fa',avtxt:'#5533aa'}
+};
+const RK=['r1','r2','r3','r4'];
+
+function fmt(n){return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtInt(n){return n.toLocaleString('en-US');}
+
+const TEAMS=[
+  {t:'Duke',c:145.25,o:'Jack'},{t:'Siena',c:0.75,o:'Sanjay'},
+  {t:'Ohio St.',c:10.68,o:'Lee'},{t:'TCU',c:1.00,o:'Lee'},
+  {t:"St. John's",c:30.75,o:'Jack'},{t:'Northern Iowa',c:3.50,o:'Sanjay'},
+  {t:'Kansas',c:21.25,o:'Sanjay'},{t:'California Baptist',c:1.50,o:'Lee'},
+  {t:'Louisville',c:16.91,o:'Lee'},{t:'South Florida',c:5.25,o:'Jack'},
+  {t:'Michigan St.',c:31.50,o:'Jack'},{t:'North Dakota St.',c:1.25,o:'Lee'},
+  {t:'UCLA',c:15.25,o:'Jack'},{t:'UCF',c:4.25,o:'Jack'},
+  {t:'UConn',c:41.75,o:'Jack'},{t:'Furman',c:1.75,o:'Sanjay'},
+  {t:'Florida',c:88.00,o:'Lee'},{t:'Lehigh/Prairie View',c:0.75,o:'Sanjay'},
+  {t:'Clemson',c:4.25,o:'Jack'},{t:'Iowa',c:8.50,o:'Jack'},
+  {t:'Vanderbilt',c:28.28,o:'nathan'},{t:'McNeese',c:1.75,o:'Jack'},
+  {t:'Nebraska',c:17.25,o:'Jack'},{t:'Troy',c:1.00,o:'Sanjay'},
+  {t:'North Carolina',c:4.50,o:'Jack'},{t:'VCU',c:5.80,o:'Jack'},
+  {t:'Illinois',c:60.00,o:'Lee'},{t:'Penn',c:1.00,o:'Lee'},
+  {t:"Saint Mary's",c:10.25,o:'Lee'},{t:'Texas A&M',c:5.71,o:'Jack'},
+  {t:'Houston',c:67.92,o:'Lee'},{t:'Idaho',c:1.25,o:'Sanjay'},
+  {t:'Arizona',c:135.25,o:'Lee'},{t:'LIU',c:0.50,o:'Lee'},
+  {t:'Villanova',c:3.83,o:'Sanjay'},{t:'Utah St.',c:7.00,o:'Jack'},
+  {t:'Wisconsin',c:18.49,o:'Jack'},{t:'High Point',c:3.50,o:'Sanjay'},
+  {t:'Arkansas',c:24.25,o:'Lee'},{t:'Hawaii',c:1.25,o:'Sanjay'},
+  {t:'BYU',c:6.69,o:'Lee'},{t:'NC State/Texas',c:7.25,o:'Jack'},
+  {t:'Gonzaga',c:39.63,o:'Lee'},{t:'Kennesaw St.',c:1.00,o:'Sanjay'},
+  {t:'U Miami (FL)',c:8.50,o:'nathan'},{t:'Missouri',c:5.75,o:'Jack'},
+  {t:'Purdue',c:56.90,o:'nathan'},{t:'Queens',c:1.25,o:'Sanjay'},
+  {t:'Michigan',c:145.00,o:'Lee'},{t:'UMBC/Howard',c:0.75,o:'Sanjay'},
+  {t:'Georgia',c:8.47,o:'Jack'},{t:'Saint Louis',c:5.75,o:'Jack'},
+  {t:'Texas Tech',c:11.25,o:'Jack'},{t:'Akron',c:3.50,o:'Jack'},
+  {t:'Alabama',c:26.00,o:'Jack'},{t:'Hofstra',c:2.75,o:'Sanjay'},
+  {t:'Tennessee',c:17.00,o:'Sanjay'},{t:'SMU/Miami Univ',c:3.75,o:'Lee'},
+  {t:'Virginia',c:28.25,o:'Jack'},{t:'Wright St.',c:1.25,o:'Jack'},
+  {t:'Kentucky',c:12.50,o:'nathan'},{t:'Santa Clara',c:2.25,o:'Lee'},
+  {t:'Iowa St.',c:67.92,o:'Jack'},{t:'Tennessee St.',c:0.75,o:'Sanjay'}
+];
+
+// Confirmed results as of 7pm ET Sat Mar 21
+// R32 complete: Michigan, MSU, Duke all won
+// R32 in progress tonight: Houston, Gonzaga, Illinois, Nebraska, Arkansas
+const BASELINE={
+  'Duke':{r64:1,r32:1,alive:1},      // beat Siena R64, beat TCU 81-58 R32 — Sweet 16
+  'Siena':{r64:0,alive:0},
+  'Ohio St.':{r64:0,alive:0},
+  'TCU':{r64:1,r32:0,alive:0},       // beat Ohio St R64, lost to Duke 81-58 R32
+  "St. John's":{r64:1,alive:1},
+  'Northern Iowa':{r64:0,alive:0},
+  'Kansas':{r64:1,alive:1},
+  'California Baptist':{r64:0,alive:0},
+  'Louisville':{r64:1,r32:0,alive:0},
+  'South Florida':{r64:0,alive:0},
+  'Michigan St.':{r64:1,r32:1,alive:1}, // beat NDSU R64, beat Louisville 77-69 R32 — Sweet 16
+  'North Dakota St.':{r64:0,alive:0},
+  'UCLA':{r64:1,alive:1},
+  'UCF':{r64:0,alive:0},
+  'UConn':{r64:1,alive:1},
+  'Furman':{r64:0,alive:0},
+  'Florida':{r64:1,alive:1},
+  'Lehigh/Prairie View':{r64:0,alive:0},
+  'Clemson':{r64:0,alive:0},
+  'Iowa':{r64:1,alive:1},
+  'Vanderbilt':{r64:1,alive:1},
+  'McNeese':{r64:0,alive:0},
+  'Nebraska':{r64:1,alive:1},
+  'Troy':{r64:0,alive:0},
+  'North Carolina':{r64:0,alive:0},
+  'VCU':{r64:1,alive:1},
+  'Illinois':{r64:1,alive:1},
+  'Penn':{r64:0,alive:0},
+  "Saint Mary's":{r64:0,alive:0},
+  'Texas A&M':{r64:1,r32:0,alive:0},
+  'Houston':{r64:1,r32:1,alive:1},
+  'Idaho':{r64:0,alive:0},
+  'Arizona':{r64:1,alive:1},
+  'LIU':{r64:0,alive:0},
+  'Villanova':{r64:0,alive:0},
+  'Utah St.':{r64:1,alive:1},
+  'Wisconsin':{r64:0,alive:0},
+  'High Point':{r64:1,alive:1},
+  'Arkansas':{r64:1,alive:1},
+  'Hawaii':{r64:0,alive:0},
+  'BYU':{r64:0,alive:0},
+  'NC State/Texas':{r64:1,r32:1,alive:1}, // Texas won First Four, beat BYU R64, beat Gonzaga 74-68 R32 — Sweet 16
+  'Gonzaga':{r64:1,r32:0,alive:0},        // beat Kennesaw St R64, lost R32 to Texas 74-68
+  'Kennesaw St.':{r64:0,alive:0},
+  'U Miami (FL)':{r64:1,alive:1},
+  'Missouri':{r64:0,alive:0},
+  'Purdue':{r64:1,alive:1},
+  'Queens':{r64:0,alive:0},
+  'Michigan':{r64:1,r32:1,alive:1},  // beat Howard R64, beat Saint Louis 95-72 R32 — Sweet 16
+  'UMBC/Howard':{r64:0,alive:0},
+  'Georgia':{r64:0,alive:0},
+  'Saint Louis':{r64:1,r32:0,alive:0},
+  'Texas Tech':{r64:1,alive:1},
+  'Akron':{r64:0,alive:0},
+  'Alabama':{r64:1,alive:1},
+  'Hofstra':{r64:0,alive:0},
+  'Tennessee':{r64:1,alive:1},
+  'SMU/Miami Univ':{r64:0,alive:0},
+  'Virginia':{r64:1,alive:1},
+  'Wright St.':{r64:0,alive:0},
+  'Kentucky':{r64:1,alive:1},
+  'Santa Clara':{r64:0,alive:0},
+  'Iowa St.':{r64:1,alive:1},
+  'Tennessee St.':{r64:0,alive:0}
+};
+
+const GAMES=[
+  {t:'Michigan vs Saint Louis',   a:'Michigan',  as:95, b:'Saint Louis',  bs:72, owners:'Lee / Jack',    done:true},
+  {t:'Michigan St. vs Louisville',a:'Mich. St.',  as:77, b:'Louisville',  bs:69, owners:'Jack / Lee',    done:true},
+  {t:'Duke vs TCU',               a:'Duke',       as:81, b:'TCU',         bs:58, owners:'Jack / Lee',    done:true},
+  {t:'Houston vs Texas A&M',      a:'Houston', as:88, b:'Texas A&M', bs:57, owners:'Lee / Jack',    done:true},
+  {t:'Gonzaga vs Texas',          a:'Texas',    as:74, b:'Gonzaga',   bs:68, owners:'Lee / Jack',    done:true},
+  {t:'Illinois vs VCU',           owners:'Lee / Jack',    time:'7:50p CBS',  done:false},
+  {t:'Nebraska vs Vanderbilt',    owners:'Jack / nathan', time:'8:45p TNT',  done:false},
+  {t:'Arkansas vs High Point',    owners:'Lee / Sanjay',  time:'9:45p TBS',  done:false},
+];
+
+// Sunday's games
+const SUNDAY_GAMES=[
+  {t:'Purdue vs Miami (FL)',    owners:'nathan / nathan', time:'12:10p CBS', done:false},
+  {t:'Iowa State vs Kentucky', owners:'Jack / nathan',   time:'2:45p CBS',  done:false},
+  {t:'Kansas vs St. John\'s',  owners:'Sanjay / Jack',   time:'5:15p CBS',  done:false},
+  {t:'Virginia vs Tennessee',  owners:'Jack / Sanjay',   time:'6:10p TNT',  done:false},
+  {t:'Florida vs Iowa',        owners:'Lee / Jack',      time:'7:10p TBS',  done:false},
+  {t:'Arizona vs Utah St.',    owners:'Lee / Jack',      time:'7:50p truTV',done:false},
+  {t:'UConn vs UCLA',          owners:'Jack / Jack',     time:'8:45p TNT',  done:false},
+  {t:'Alabama vs Texas Tech',  owners:'Jack / Jack',     time:'9:45p TBS',  done:false},
+];
+
+let RESULTS=JSON.parse(JSON.stringify(BASELINE));
+let lastUpdated=null,isLoading=false,expanded={},errorMsg=null,refreshTimer=null;
+const REFRESH_MS=5*60*1000;
+
+function getKey(){return localStorage.getItem('calcutta_api_key')||'';}
+function saveKey(k){localStorage.setItem('calcutta_api_key',k.trim());}
+function resetKey(){localStorage.removeItem('calcutta_api_key');render();}
+
+function pts(team){const r=RESULTS[team]||{};return(r.r64||0)*1+(r.r32||0)*2+(r.s16||0)*4+(r.e8||0)*8+(r.f4||0)*16+(r.champ||0)*24;}
+function isAlive(t){return!!(RESULTS[t]||{}).alive;}
+function rlabel(t){const r=RESULTS[t]||{};if(r.champ)return'Champ 🏆';if(r.f4)return'Final 4';if(r.e8)return'Elite 8';if(r.s16)return'Sweet 16';if(r.r32)return'R32 ✓';if(r.r64)return'R64 ✓';return'';}
+
+function buildLB(){
+  return['Jack','Lee','Sanjay','nathan'].map(name=>{
+    const my=TEAMS.filter(x=>x.o===name);
+    const spend=my.reduce((s,x)=>s+x.c,0);
+    const shares=my.reduce((s,x)=>s+pts(x.t),0);
+    const aliveCount=my.filter(x=>isAlive(x.t)).length;
+    const earnedBack=(shares/TOTAL_SHARES)*TOTAL_SPEND;
+    const profit=earnedBack-spend;
+    const roi=(profit/spend)*100;
+    return{name,spend,shares,aliveCount,earnedBack,profit,roi,
+      total:my.length,
+      scoring:my.filter(x=>pts(x.t)>0),
+      stillAlive:my.filter(x=>isAlive(x.t)&&pts(x.t)===0),
+      elim:my.filter(x=>!isAlive(x.t)&&pts(x.t)===0)
+    };
+  }).sort((a,b)=>b.shares-a.shares);
+}
+
+function renderScoreboard(){
+  let h='';
+  GAMES.forEach(g=>{
+    if(g.done){
+      const aWin=g.as>g.bs;
+      h+=`<div class="score-item">
+        <div class="score-label">Final · R32</div>
+        <div class="score-teams">
+          <div class="score-row"><span class="score-team${aWin?' winner':''}">${g.a}</span><span class="score-pts${aWin?' winner':''}">${g.as}</span></div>
+          <div class="score-row"><span class="score-team${!aWin?' winner':''}">${g.b}</span><span class="score-pts${!aWin?' winner':''}">${g.bs}</span></div>
+        </div>
+        <div class="score-owner">${g.owners}</div>
+      </div>`;
+    }else{
+      h+=`<div class="score-item">
+        <div class="score-label">${g.time}</div>
+        <div class="score-upcoming">${g.t}</div>
+        <div class="score-owner">${g.owners}</div>
+      </div>`;
+    }
+  });
+  const el=document.getElementById('scoreboard-strip');
+  if(el)el.innerHTML=h;
+}
+
+async function fetchAndRender(){
+  const key=getKey();
+  if(!key){render();renderScoreboard();return;}
+  if(isLoading)return;
+  isLoading=true;errorMsg=null;
+  const btn=document.getElementById('refresh-btn');
+  if(btn)btn.textContent='↻ …';
+  const st=document.getElementById('status-text');
+  if(st)st.textContent='Fetching scores…';
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        tools:[{"type":"web_search_20250305","name":"web_search"}],
+        system:`You are a sports data assistant. Search for the latest 2026 NCAA March Madness results and return ONLY a valid JSON object — no markdown, no backticks, no explanation.
+Each key = exact team name as provided. Each value = object with boolean fields for completed rounds only: r64, r32, s16, e8, f4, champ (true=won), alive (true=still in tournament).
+Confirmed — never contradict: Michigan beat Howard R64 + beat Saint Louis 95-72 in R32 (r64:true,r32:true,alive:true). Michigan St. beat NDSU R64 + beat Louisville 77-69 in R32 (r64:true,r32:true,alive:true). Duke beat Siena R64 + beat TCU 81-58 in R32 (r64:true,r32:true,alive:true). TCU: won R64 vs Ohio State, lost R32 to Duke (r64:true,r32:false,alive:false). Louisville: won R64, lost R32 to MSU (r64:true,r32:false,alive:false). Saint Louis: won R64, lost R32 to Michigan (r64:true,r32:false,alive:false). Houston: beat Idaho R64 + beat Texas A&M 88-57 in R32 (r64:true,r32:true,alive:true). Texas A&M: beat Saint Mary's R64, lost R32 to Houston (r64:true,r32:false,alive:false). NC State/Texas: Texas won First Four, beat BYU R64, beat Gonzaga 74-68 in R32 (r64:true, r32:true, alive:true). Gonzaga: won R64, lost R32 to Texas (r64:true, r32:false, alive:false). High Point upset Wisconsin R64 (r64:true,alive:true). Return ONLY JSON.`,
+        messages:[{role:'user',content:`Search for all completed 2026 NCAA tournament R32 results tonight and return JSON for: ${TEAMS.map(x=>x.t).join(', ')}`}]
+      })
+    });
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${resp.status}`);}
+    const data=await resp.json();
+    const text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    const match=text.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
+    if(match){
+      const parsed=JSON.parse(match[0]);
+      for(const[team,res]of Object.entries(parsed)){
+        if(!RESULTS[team])RESULTS[team]={};
+        for(const[k,v]of Object.entries(res)){
+          if(v===true)RESULTS[team][k]=true;
+          else if(!(k in RESULTS[team]))RESULTS[team][k]=v;
+        }
+      }
+    }
+    lastUpdated=new Date();
+  }catch(e){
+    errorMsg=e.message?.includes('401')?'Invalid API key — tap 🔑 below to update.':'Could not fetch live data. Showing last known results.';
+    console.error(e);
+  }
+  isLoading=false;
+  if(btn)btn.textContent='↻ Refresh';
+  render();
+  renderScoreboard();
+  clearTimeout(refreshTimer);
+  refreshTimer=setTimeout(fetchAndRender,REFRESH_MS);
+}
+
+function render(){
+  const key=getKey();
+  const lb=buildLB();
+  const totalShares=lb.reduce((s,p)=>s+p.shares,0);
+  const maxShares=Math.max(...lb.map(p=>p.shares),1);
+  const aliveTotal=lb.reduce((s,p)=>s+p.aliveCount,0);
+  const maxSpend=Math.max(...lb.map(p=>p.spend));
+  const maxRoi=Math.max(...lb.map(p=>Math.abs(p.roi)),1);
+  const lbRoi=[...lb].sort((a,b)=>b.roi-a.roi);
+
+  const st=document.getElementById('status-text');
+  if(st)st.textContent=lastUpdated?`Live · updated ${lastUpdated.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · R32 in progress`:'R32 in progress · Sat Mar 21';
+
+  let h='';
+  if(errorMsg)h+=`<div class="err-banner">${errorMsg}</div>`;
+
+  // Leaderboard strips
+  h+=`<div class="slabel">Standings</div><div class="lb-strips">`;
+  const lbS=[...lb].sort((a,b)=>b.shares-a.shares);
+  h+=`<div class="lbs"><div class="lbs-head"><span class="lbs-name">🏅 Shares leaderboard</span><span class="lbs-sub">points earned</span></div><div class="lbs-rows">`;
+  lbS.forEach((p,i)=>{
+    const c=PC[p.name];const pct=(p.shares/maxShares*100).toFixed(1);const init=p.name.slice(0,2).toUpperCase();
+    h+=`<div class="lbr"><div class="lbr-rank ${RK[i]}">${i+1}</div><div class="lbr-av" style="background:${c.av};color:${c.avtxt}">${init}</div><div class="lbr-name">${p.name.charAt(0).toUpperCase()+p.name.slice(1)}</div><div class="lbr-track"><div class="lbr-fill" style="width:${pct}%;background:${c.c}"></div></div><div class="lbr-val" style="color:${c.c}">${p.shares} pts</div></div>`;
+  });
+  h+=`</div></div>`;
+  h+=`<div class="lbs"><div class="lbs-head"><span class="lbs-name">💰 ROI leaderboard</span><span class="lbs-sub">vs auction spend</span></div><div class="lbs-rows">`;
+  lbRoi.forEach((p,i)=>{
+    const c=PC[p.name];const pct=(Math.abs(p.roi)/maxRoi*100).toFixed(1);const barColor=p.roi>=0?'#007a47':'#cc2200';const vcls=p.roi>2?'pos':p.roi<-2?'neg':'neu';const roiStr=(p.roi>=0?'+':'')+p.roi.toFixed(0)+'%';const init=p.name.slice(0,2).toUpperCase();
+    h+=`<div class="lbr"><div class="lbr-rank ${RK[i]}">${i+1}</div><div class="lbr-av" style="background:${c.av};color:${c.avtxt}">${init}</div><div class="lbr-name">${p.name.charAt(0).toUpperCase()+p.name.slice(1)}</div><div class="lbr-track"><div class="lbr-fill" style="width:${pct}%;background:${barColor}"></div></div><div class="lbr-val ${vcls}">${roiStr}</div></div>`;
+  });
+  h+=`</div></div></div>`;
+
+  // Metrics
+  h+=`<div class="metrics">
+    <div class="metric"><div class="metric-lbl">Pool</div><div class="metric-val">$${fmt(TOTAL_SPEND)}</div><div class="metric-sub">total auction spend</div></div>
+    <div class="metric"><div class="metric-lbl">Leader</div><div class="metric-val">${lb[0].name.charAt(0).toUpperCase()+lb[0].name.slice(1)}</div><div class="metric-sub">${lb[0].shares} shares · ${((lb[0].shares/TOTAL_SHARES)*100).toFixed(0)}% of pool</div></div>
+    <div class="metric"><div class="metric-lbl">Shares earned</div><div class="metric-val">${fmtInt(totalShares)}</div><div class="metric-sub">of 187 possible</div></div>
+    <div class="metric"><div class="metric-lbl">Teams alive</div><div class="metric-val">${fmtInt(aliveTotal)}</div><div class="metric-sub">still in tournament</div></div>
+  </div>`;
+
+  // Player cards
+  h+=`<div class="slabel">Players</div><div class="cards">`;
+  lb.forEach((p,i)=>{
+    const c=PC[p.name];
+    const sharePct=(p.shares/maxShares*100).toFixed(1);
+    const roiStr=(p.roi>=0?'+':'')+p.roi.toFixed(0)+'%';
+    const roiCls=p.roi>2?'chip-pos':p.roi<-2?'chip-neg':'chip-neu';
+    const init=p.name.slice(0,2).toUpperCase();
+    const isOpen=expanded[p.name];
+    const disp=p.name.charAt(0).toUpperCase()+p.name.slice(1);
+    const spendPct=(p.spend/maxSpend*100).toFixed(1);
+    const earnedPct=Math.min((p.earnedBack/maxSpend*100),100).toFixed(1);
+    const pnlCls=p.profit>0?'pnl-pos':p.profit<0?'pnl-neg':'pnl-neu';
+    const pnlStr=(p.profit>=0?'+$':'-$')+fmt(Math.abs(p.profit));
+
+    h+=`<div class="card">
+      <div class="card-hdr" onclick="tog('${p.name}')">
+        <div class="card-toprow">
+          <div class="av" style="background:${c.av};color:${c.avtxt}">${init}</div>
+          <div class="cinfo">
+            <div class="cname">${disp}</div>
+            <div class="csub">${p.total} teams · $${fmt(p.spend)} spent · ${p.aliveCount} alive</div>
+          </div>
+          <div class="cright">
+            <div class="pts-big" style="color:${c.c}">${p.shares}</div>
+            <div class="pts-lbl">shares</div>
+            <div class="roi-chip ${roiCls}">${roiStr}</div>
+          </div>
+        </div>
+        <div class="fin">
+          <div class="fin-row">
+            <div class="fin-lbl">Spent</div>
+            <div class="fin-track"><div class="fin-fill" style="width:${spendPct}%;background:#ccc"></div></div>
+            <div class="fin-val">$${fmt(p.spend)}</div>
+          </div>
+          <div class="fin-row">
+            <div class="fin-lbl">Earned</div>
+            <div class="fin-track"><div class="fin-fill" style="width:${earnedPct}%;background:${c.c}"></div></div>
+            <div class="fin-val" style="color:${c.c}">$${fmt(p.earnedBack)}</div>
+          </div>
+          <div class="pnl-row">
+            <div class="pnl-lbl">Current P&amp;L</div>
+            <div class="pnl-val ${pnlCls}">${pnlStr}</div>
+          </div>
+        </div>
+        <div class="sbar"><div class="sbar-fill" style="width:${sharePct}%;background:${c.c}"></div></div>
+        <div class="tog-hint">${isOpen?'▲ hide teams':'▼ show teams'}</div>
+      </div>
+      <div class="card-detail ${isOpen?'open':''}">`;
+
+    if(p.scoring.length){
+      h+=`<div class="dsec"><div class="dsec-title">Scoring <span>${p.scoring.length} teams</span></div><div class="tlist">`;
+      p.scoring.forEach(x=>{
+        const s=pts(x.t),rl=rlabel(x.t);
+        h+=`<div class="trow sc"><span class="tn">${x.t}${rl?`<span class="rpill">${rl}</span>`:''}</span><span class="tv">+${s} pts · paid $${fmt(x.c)}</span></div>`;
+      });
+      h+=`</div></div>`;
+    }
+    if(p.stillAlive.length){
+      h+=`<div class="dsec"><div class="dsec-title">Still alive — no wins yet <span>${p.stillAlive.length}</span></div><div class="tlist">`;
+      p.stillAlive.forEach(x=>{
+        h+=`<div class="trow al"><span class="tn">${x.t}</span><span class="tv">paid $${fmt(x.c)}</span></div>`;
+      });
+      h+=`</div></div>`;
+    }
+    if(p.elim.length){
+      h+=`<div class="dsec"><div class="dsec-title">Eliminated <span>${p.elim.length}</span></div><div class="tlist">`;
+      p.elim.forEach(x=>{h+=`<div class="trow el"><span class="tn">${x.t}</span><span class="tv">$${fmt(x.c)}</span></div>`;});
+      h+=`</div></div>`;
+    }
+    h+=`</div></div>`;
+  });
+  h+=`</div>`;
+
+  // Bonuses
+  h+=`<div class="slabel">Bonus Awards</div>
+  <div class="sblock">
+    <div class="sblock-head">1 share each · awarded at tournament end</div>
+    <div class="brow"><div class="bicon">💥</div><div><div class="btitle">Biggest blowout victim</div><div class="bdesc">Goes to the owner of the team that loses by the largest margin. Current leader: Lehigh lost to Florida by 59 pts (2nd largest margin in tournament history).</div><div class="bwin w-like">⟳ Currently Sanjay (owns Lehigh) · not yet confirmed</div></div></div>
+    <div class="brow"><div class="bicon">🌀</div><div><div class="btitle">Lowest seed in Final Four</div><div class="bdesc">Awarded to the owner of the lowest-seeded team to reach the Final Four.</div><div class="bwin w-tbd">TBD — tournament in progress</div></div></div>
+    <div class="brow"><div class="bicon">🏆</div><div><div class="btitle">Biggest upset</div><div class="bdesc">Current leader: Texas (#11) over Gonzaga (#3) — 8-seed differential. Beats High Point over Wisconsin (7). A larger upset could still happen.</div><div class="bwin w-like">⟳ Currently Jack (owns NC State/Texas) · not yet confirmed</div></div></div>
+  </div>`;
+
+  // Saturday games
+  h+=`<div class="slabel">Saturday R32 Games</div><div class="sblock">`;
+  GAMES.forEach(g=>{
+    h+=`<div class="grow"><div><div class="gteams">${g.t}</div><div class="gowners">${g.owners}</div></div>`;
+    if(g.done){const aWin=g.as>g.bs;h+=`<div class="gscore">${aWin?g.a:g.b} ${Math.max(g.as,g.bs)}–${Math.min(g.as,g.bs)}</div>`;}
+    else{h+=`<div class="gtime">${g.time}</div>`;}
+    h+=`</div>`;
+  });
+  h+=`</div>`;
+
+  // Sunday games
+  h+=`<div class="slabel">Sunday R32 Games</div><div class="sblock">`;
+  SUNDAY_GAMES.forEach(g=>{
+    h+=`<div class="grow"><div><div class="gteams">${g.t}</div><div class="gowners">${g.owners}</div></div><div class="gtime">${g.time}</div></div>`;
+  });
+  h+=`</div>`;
+
+  if(lastUpdated)h+=`<div class="last-upd">Last updated ${lastUpdated.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})} · Auto-refreshes every 5 min</div>`;
+
+  if(!key){
+    h+=`<div class="slabel" style="margin-top:12px">Live Updates</div>
+    <div class="api-banner">
+      <div class="api-title">🔑 Enable auto-refresh</div>
+      <div class="api-desc">Enter an Anthropic API key to pull live scores every 5 min. Saved on your device only — never shared. Free at console.anthropic.com.</div>
+      <div class="api-row"><input class="api-inp" id="api-key-input" type="password" placeholder="sk-ant-…"/><button class="api-btn" onclick="handleSaveKey()">Go Live</button></div>
+    </div>`;
+  }else{
+    h+=`<button class="chgkey" onclick="resetKey()">🔑 Change API key</button>`;
+  }
+
+  h+=`<div class="footer-note">Scoring: 1pt R64 · 2pt R32 · 4pt S16 · 8pt E8 · 16pt F4 · 24pt Championship · 1pt each bonus. P&L and ROI based on current shares projected to pool total ($${fmt(TOTAL_SPEND)}). Split teams: winner of First Four gets full credit.</div>`;
+
+  document.getElementById('root').innerHTML=h;
+}
+
+function tog(n){expanded[n]=!expanded[n];render();}
+function handleSaveKey(){
+  const inp=document.getElementById('api-key-input');
+  if(inp&&inp.value.trim().startsWith('sk-')){saveKey(inp.value.trim());fetchAndRender();}
+  else alert('Please enter a valid Anthropic API key starting with sk-ant-…');
+}
+
+renderScoreboard();
+render();
+if(getKey())fetchAndRender();
+</script>
+</body>
+</html>
