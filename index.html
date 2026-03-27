@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Live Calcutta Results Tracker</title>
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --surface2: #f0ede6;
+    --border: rgba(0,0,0,0.09);
+    --border2: rgba(0,0,0,0.16);
+    --text: #1a1a18;
+    --text2: #6b6960;
+    --text3: #9a9890;
+    --green-bg: #eaf3de;
+    --green-fg: #3b6d11;
+    --green-mid: #97c459;
+    --blue-bg: #e6f1fb;
+    --blue-fg: #185fa5;
+    --red-bg: #fcebeb;
+    --red-fg: #a32d2d;
+    --amber-bg: #faeeda;
+    --amber-fg: #854f0b;
+    --gold: #9a7b00;
+    --silver: #777;
+    --bronze: #7a4b28;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1916;
+      --surface: #242220;
+      --surface2: #2e2c29;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.15);
+      --text: #f0ede6;
+      --text2: #9a9890;
+      --text3: #6b6960;
+      --green-bg: #1a2e0a;
+      --green-fg: #7ec845;
+      --green-mid: #3b6d11;
+      --blue-bg: #0d2238;
+      --blue-fg: #69aee8;
+      --red-bg: #2e0e0e;
+      --red-fg: #e87070;
+      --amber-bg: #2a1c06;
+      --amber-fg: #e8a84a;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; min-height: 100vh; }
+  .page { max-width: 480px; margin: 0 auto; padding: 0 0 80px; }
+
+  /* Header */
+  .header { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 14px 14px 10px; position: sticky; top: 0; z-index: 10; }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .title { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -.02em; }
+  .subtitle { font-size: 11px; color: var(--text2); margin-top: 3px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #639922; flex-shrink: 0; animation: pulse 2.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.2} }
+  .header-btns { display: flex; gap: 6px; flex-shrink: 0; }
+  .hbtn { background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 20px; padding: 5px 11px; font-size: 11px; font-weight: 500; color: var(--text2); cursor: pointer; white-space: nowrap; }
+  .hbtn:active { opacity: .6; }
+
+  /* Body */
+  .body { padding: 10px 10px 0; }
+
+  /* API key banner */
+  .api-banner { background: var(--amber-bg); border: 0.5px solid var(--amber-fg); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 10px; }
+  .api-banner-title { font-size: 12px; font-weight: 600; color: var(--amber-fg); margin-bottom: 4px; }
+  .api-banner-desc { font-size: 11px; color: var(--amber-fg); opacity: .85; margin-bottom: 8px; line-height: 1.4; }
+  .api-input-row { display: flex; gap: 6px; }
+  .api-input { flex: 1; background: var(--surface); border: 0.5px solid var(--border2); border-radius: 6px; padding: 7px 10px; font-size: 12px; color: var(--text); outline: none; min-width: 0; }
+  .api-input:focus { border-color: var(--blue-fg); }
+  .api-save-btn { background: var(--amber-fg); color: #fff; border: none; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .api-save-btn:active { opacity: .8; }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(2,1fr); gap: 7px; margin-bottom: 10px; }
+  .metric { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .metric-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+  .metric-value { font-size: 21px; font-weight: 700; color: var(--text); line-height: 1.1; letter-spacing: -.02em; }
+  .metric-sub { font-size: 10px; color: var(--text2); margin-top: 1px; }
+
+  /* Cards */
+  .cards { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .card-header { padding: 12px 13px; cursor: pointer; user-select: none; }
+  .card-header:active { background: var(--surface2); }
+  .card-row { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
+  .rank { font-size: 14px; font-weight: 700; min-width: 16px; }
+  .rank.gold { color: var(--gold); }
+  .rank.silver { color: var(--silver); }
+  .rank.bronze { color: var(--bronze); }
+  .rank.fourth { color: var(--text3); }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .pname { font-size: 14px; font-weight: 600; color: var(--text); }
+  .psub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+  .pts-big { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1; letter-spacing: -.02em; }
+  .pts-lbl { font-size: 10px; color: var(--text3); }
+  .roi-badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .roi-pos { background: var(--green-bg); color: var(--green-fg); }
+  .roi-neg { background: var(--red-bg); color: var(--red-fg); }
+  .roi-neu { background: var(--surface2); color: var(--text2); }
+  .progress { height: 3px; background: var(--surface2); }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width .5s ease; }
+  .toggle-hint { text-align: center; font-size: 10px; color: var(--text3); margin-top: 5px; }
+
+  /* Card detail */
+  .card-detail { border-top: 0.5px solid var(--border); padding: 10px 13px; display: none; }
+  .card-detail.open { display: block; }
+  .detail-sec { margin-bottom: 10px; }
+  .detail-sec:last-child { margin-bottom: 0; }
+  .sec-title { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .team-list { display: flex; flex-direction: column; gap: 3px; }
+  .trow { display: flex; justify-content: space-between; align-items: center; padding: 6px 9px; border-radius: 7px; font-size: 12px; }
+  .trow.scoring { background: var(--green-bg); border: 0.5px solid var(--green-mid); }
+  .trow.alive { background: var(--surface2); border: 0.5px solid var(--border); }
+  .trow.elim { opacity: .35; background: var(--surface2); border: 0.5px solid var(--border); }
+  .tname { font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .trow.scoring .tname { color: var(--green-fg); }
+  .rpill { font-size: 9px; background: var(--blue-bg); color: var(--blue-fg); padding: 1px 5px; border-radius: 4px; font-weight: 600; }
+  .tval { font-size: 11px; color: var(--text2); flex-shrink: 0; margin-left: 4px; }
+  .trow.scoring .tval { color: var(--green-fg); font-weight: 600; }
+
+  /* Section cards */
+  .section-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 8px; }
+  .section-head { background: var(--surface2); padding: 8px 13px; font-size: 10px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .07em; border-bottom: 0.5px solid var(--border); }
+
+  /* Bonus rows */
+  .bonus-row { display: flex; gap: 10px; padding: 10px 13px; border-top: 0.5px solid var(--border); align-items: flex-start; }
+  .bonus-row:first-of-type { border-top: none; }
+  .bicon { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+  .btitle { font-size: 13px; font-weight: 600; color: var(--text); }
+  .bdesc { font-size: 11px; color: var(--text2); margin-top: 2px; line-height: 1.4; }
+  .bwinner { font-size: 11px; font-weight: 600; margin-top: 4px; }
+  .w-confirmed { color: var(--green-fg); }
+  .w-likely { color: var(--blue-fg); }
+  .w-tbd { color: var(--text3); }
+
+  /* Games */
+  .game-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 13px; border-top: 0.5px solid var(--border); }
+  .game-row:first-of-type { border-top: none; }
+  .game-teams { font-size: 13px; font-weight: 500; color: var(--text); }
+  .game-owners { font-size: 10px; color: var(--text3); margin-top: 1px; }
+  .game-score { font-size: 12px; font-weight: 600; color: var(--green-fg); }
+  .game-time { font-size: 11px; color: var(--text3); }
+
+  /* Loading */
+  .loading-wrap { text-align: center; padding: 40px 16px; }
+  .spinner { width: 26px; height: 26px; border: 2px solid var(--border2); border-top-color: var(--text2); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--text2); }
+  .loading-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+  /* Error */
+  .err-banner { background: var(--red-bg); border: 0.5px solid var(--red-fg); border-radius: var(--radius-sm); padding: 9px 12px; margin-bottom: 9px; font-size: 12px; color: var(--red-fg); line-height: 1.4; }
+
+  .last-updated { font-size: 10px; color: var(--text3); text-align: center; padding: 6px 4px 0; }
+  .footer-note { font-size: 10px; color: var(--text3); line-height: 1.6; padding: 6px 4px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="title">🏀 Live Calcutta Results Tracker</div>
+        <div class="subtitle"><span class="dot"></span><span id="status-text">Loading…</span></div>
+      </div>
+      <div class="header-btns">
+        <button class="hbtn" id="refresh-btn" onclick="fetchAndRender()">↻ Refresh</button>
+        <button class="hbtn" onclick="resetKey()" title="Change API key">🔑</button>
+      </div>
+    </div>
+  </div>
+  <div class="body" id="body-wrap">
+    <div class="loading-wrap"><div class="spinner"></div><div class="loading-text">Loading…</div></div>
+  </div>
+</div>
+
+<script>
+const SC = {r64:1,r32:2,s16:4,e8:8,f4:16,champ:24};
+const TOTAL_SHARES = 187;
+const TOTAL_SPEND = 1296.98;
+const COLORS = {
+  Jack:   {bg:'#deeeff',fg:'#185fa5'},
+  Lee:    {bg:'#d4f0e4',fg:'#0f6e56'},
+  Sanjay: {bg:'#fde8d8',fg:'#993c1d'},
+  nathan: {bg:'#fce4ef',fg:'#993556'}
+};
+const RANK_CLS = ['gold','silver','bronze','fourth'];
+
+const TEAMS = [
+  {t:'Duke',c:145.25,o:'Jack'},{t:'Siena',c:0.75,o:'Sanjay'},
+  {t:'Ohio St.',c:10.68,o:'Lee'},{t:'TCU',c:1.00,o:'Lee'},
+  {t:"St. John's",c:30.75,o:'Jack'},{t:'Northern Iowa',c:3.50,o:'Sanjay'},
+  {t:'Kansas',c:21.25,o:'Sanjay'},{t:'California Baptist',c:1.50,o:'Lee'},
+  {t:'Louisville',c:16.91,o:'Lee'},{t:'South Florida',c:5.25,o:'Jack'},
+  {t:'Michigan St.',c:31.50,o:'Jack'},{t:'North Dakota St.',c:1.25,o:'Lee'},
+  {t:'UCLA',c:15.25,o:'Jack'},{t:'UCF',c:4.25,o:'Jack'},
+  {t:'UConn',c:41.75,o:'Jack'},{t:'Furman',c:1.75,o:'Sanjay'},
+  {t:'Florida',c:88.00,o:'Lee'},{t:'Lehigh/Prairie View',c:0.75,o:'Sanjay'},
+  {t:'Clemson',c:4.25,o:'Jack'},{t:'Iowa',c:8.50,o:'Jack'},
+  {t:'Vanderbilt',c:28.28,o:'nathan'},{t:'McNeese',c:1.75,o:'Jack'},
+  {t:'Nebraska',c:17.25,o:'Jack'},{t:'Troy',c:1.00,o:'Sanjay'},
+  {t:'North Carolina',c:4.50,o:'Jack'},{t:'VCU',c:5.80,o:'Jack'},
+  {t:'Illinois',c:60.00,o:'Lee'},{t:'Penn',c:1.00,o:'Lee'},
+  {t:"Saint Mary's",c:10.25,o:'Lee'},{t:'Texas A&M',c:5.71,o:'Jack'},
+  {t:'Houston',c:67.92,o:'Lee'},{t:'Idaho',c:1.25,o:'Sanjay'},
+  {t:'Arizona',c:135.25,o:'Lee'},{t:'LIU',c:0.50,o:'Lee'},
+  {t:'Villanova',c:3.83,o:'Sanjay'},{t:'Utah St.',c:7.00,o:'Jack'},
+  {t:'Wisconsin',c:18.49,o:'Jack'},{t:'High Point',c:3.50,o:'Sanjay'},
+  {t:'Arkansas',c:24.25,o:'Lee'},{t:'Hawaii',c:1.25,o:'Sanjay'},
+  {t:'BYU',c:6.69,o:'Lee'},{t:'NC State/Texas',c:7.25,o:'Jack'},
+  {t:'Gonzaga',c:39.63,o:'Lee'},{t:'Kennesaw St.',c:1.00,o:'Sanjay'},
+  {t:'U Miami (FL)',c:8.50,o:'nathan'},{t:'Missouri',c:5.75,o:'Jack'},
+  {t:'Purdue',c:56.90,o:'nathan'},{t:'Queens',c:1.25,o:'Sanjay'},
+  {t:'Michigan',c:145.00,o:'Lee'},{t:'UMBC/Howard',c:0.75,o:'Sanjay'},
+  {t:'Georgia',c:8.47,o:'Jack'},{t:'Saint Louis',c:5.75,o:'Jack'},
+  {t:'Texas Tech',c:11.25,o:'Jack'},{t:'Akron',c:3.50,o:'Jack'},
+  {t:'Alabama',c:26.00,o:'Jack'},{t:'Hofstra',c:2.75,o:'Sanjay'},
+  {t:'Tennessee',c:17.00,o:'Sanjay'},{t:'SMU/Miami Univ',c:3.75,o:'Lee'},
+  {t:'Virginia',c:28.25,o:'Jack'},{t:'Wright St.',c:1.25,o:'Jack'},
+  {t:'Kentucky',c:12.50,o:'nathan'},{t:'Santa Clara',c:2.25,o:'Lee'},
+  {t:'Iowa St.',c:67.92,o:'Jack'},{t:'Tennessee St.',c:0.75,o:'Sanjay'}
+];
+
+// Confirmed baseline results — never overwritten by API
+const BASELINE = {
+  'Duke':{r64:1,alive:1},'Siena':{r64:0,alive:0},'Ohio St.':{r64:0,alive:0},
+  'TCU':{r64:1,alive:1},"St. John's":{r64:1,alive:1},'Northern Iowa':{r64:0,alive:0},
+  'Kansas':{r64:1,alive:1},'California Baptist':{r64:0,alive:0},
+  'Louisville':{r64:1,alive:1},'South Florida':{r64:0,alive:0},
+  'Michigan St.':{r64:1,alive:1},'North Dakota St.':{r64:0,alive:0},
+  'UCLA':{r64:1,alive:1},'UCF':{r64:0,alive:0},
+  'UConn':{r64:1,alive:1},'Furman':{r64:0,alive:0},
+  'Florida':{r64:1,alive:1},'Lehigh/Prairie View':{r64:0,alive:0},
+  'Clemson':{r64:0,alive:0},'Iowa':{r64:1,alive:1},
+  'Vanderbilt':{r64:1,alive:1},'McNeese':{r64:0,alive:0},
+  'Nebraska':{r64:1,alive:1},'Troy':{r64:0,alive:0},
+  'North Carolina':{r64:0,alive:0},'VCU':{r64:1,alive:1},
+  'Illinois':{r64:1,alive:1},'Penn':{r64:0,alive:0},
+  "Saint Mary's":{r64:0,alive:0},'Texas A&M':{r64:1,alive:1},
+  'Houston':{r64:1,alive:1},'Idaho':{r64:0,alive:0},
+  'Arizona':{r64:1,alive:1},'LIU':{r64:0,alive:0},
+  'Villanova':{r64:0,alive:0},'Utah St.':{r64:1,alive:1},
+  'Wisconsin':{r64:0,alive:0},'High Point':{r64:1,alive:1},
+  'Arkansas':{r64:1,alive:1},'Hawaii':{r64:0,alive:0},
+  'BYU':{r64:0,alive:0},'NC State/Texas':{r64:1,alive:1},
+  'Gonzaga':{r64:1,alive:1},'Kennesaw St.':{r64:0,alive:0},
+  'U Miami (FL)':{r64:1,alive:1},'Missouri':{r64:0,alive:0},
+  'Purdue':{r64:1,alive:1},'Queens':{r64:0,alive:0},
+  'Michigan':{r64:1,r32:1,alive:1},'UMBC/Howard':{r64:0,alive:0},
+  'Georgia':{r64:0,alive:0},'Saint Louis':{r64:1,r32:0,alive:0},
+  'Texas Tech':{r64:1,alive:1},'Akron':{r64:0,alive:0},
+  'Alabama':{r64:1,alive:1},'Hofstra':{r64:0,alive:0},
+  'Tennessee':{r64:1,alive:1},'SMU/Miami Univ':{r64:0,alive:0},
+  'Virginia':{r64:1,alive:1},'Wright St.':{r64:0,alive:0},
+  'Kentucky':{r64:1,alive:1},'Santa Clara':{r64:0,alive:0},
+  'Iowa St.':{r64:1,alive:1},'Tennessee St.':{r64:0,alive:0}
+};
+
+let RESULTS = JSON.parse(JSON.stringify(BASELINE));
+let lastUpdated = null;
+let isLoading = false;
+let expanded = {};
+let errorMsg = null;
+let refreshTimer = null;
+const REFRESH_MS = 5 * 60 * 1000;
+
+// ── API key management ──────────────────────────────────────────
+function getKey() { return localStorage.getItem('calcutta_api_key') || ''; }
+function saveKey(k) { localStorage.setItem('calcutta_api_key', k.trim()); }
+function resetKey() {
+  localStorage.removeItem('calcutta_api_key');
+  render();
+}
+
+// ── Scoring helpers ─────────────────────────────────────────────
+function pts(team) {
+  const r = RESULTS[team] || {};
+  return (r.r64||0)*1+(r.r32||0)*2+(r.s16||0)*4+(r.e8||0)*8+(r.f4||0)*16+(r.champ||0)*24;
+}
+function isAlive(team) { return !!(RESULTS[team]||{}).alive; }
+function roundLabel(team) {
+  const r = RESULTS[team]||{};
+  if (r.champ) return 'Champion 🏆';
+  if (r.f4)   return 'Final Four';
+  if (r.e8)   return 'Elite 8';
+  if (r.s16)  return 'Sweet 16';
+  if (r.r32)  return 'R32';
+  if (r.r64)  return 'R64';
+  return '';
+}
+
+function buildLB() {
+  return ['Jack','Lee','Sanjay','nathan'].map(name => {
+    const my = TEAMS.filter(x => x.o === name);
+    const spend = my.reduce((s,x) => s+x.c, 0);
+    const shares = my.reduce((s,x) => s+pts(x.t), 0);
+    const aliveCount = my.filter(x => isAlive(x.t)).length;
+    return {
+      name, spend, shares, aliveCount, total: my.length,
+      scoring:    my.filter(x => pts(x.t) > 0),
+      stillAlive: my.filter(x => isAlive(x.t) && pts(x.t) === 0),
+      elim:       my.filter(x => !isAlive(x.t) && pts(x.t) === 0)
+    };
+  }).sort((a,b) => b.shares - a.shares);
+}
+
+// ── Live fetch ──────────────────────────────────────────────────
+async function fetchAndRender() {
+  const key = getKey();
+  if (!key) { render(); return; }
+  if (isLoading) return;
+
+  isLoading = true;
+  errorMsg = null;
+  const btn = document.getElementById('refresh-btn');
+  if (btn) btn.textContent = '↻ …';
+  document.getElementById('status-text').textContent = 'Fetching latest scores…';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        tools: [{"type":"web_search_20250305","name":"web_search"}],
+        system: `You are a sports data assistant for a March Madness pool tracker. Search for the very latest 2026 NCAA tournament results and return ONLY a valid JSON object — no markdown, no explanation, no backticks.
+
+Each key is a team name exactly as provided. Each value is an object with these boolean fields (only include rounds that have been completed):
+- r64: true if they won their Round of 64 game
+- r32: true if they won their Round of 32 game  
+- s16: true if they won their Sweet 16 game
+- e8: true if they won their Elite 8 game
+- f4: true if they won their Final Four game
+- champ: true if they won the Championship
+- alive: true if still in the tournament
+
+Known confirmed results — do not contradict these:
+- NC State/Texas: Texas won First Four over NC State, then Texas beat BYU in R64 (r64:true, alive:true)
+- Michigan beat Howard in R64 AND beat Saint Louis 95-72 in R32 (r64:true, r32:true, alive:true, in Sweet 16)
+- Saint Louis: won R64 over Georgia, lost R32 to Michigan (r64:true, r32:false, alive:false)
+- High Point upset Wisconsin in R64 (r64:true, alive:true)
+- Florida beat Prairie View by 59 in R64 (r64:true, alive:true)
+- All other R64 results are confirmed — only update r32/s16/e8/f4/champ fields based on new results.
+
+Return ONLY the JSON object.`,
+        messages: [{
+          role: 'user',
+          content: `Search for all completed 2026 NCAA men's basketball tournament results as of right now and return a JSON object for these teams: ${TEAMS.map(x=>x.t).join(', ')}`
+        }]
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    const match = text.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      // Merge: only add new true values, never remove confirmed results
+      for (const [team, res] of Object.entries(parsed)) {
+        if (!RESULTS[team]) RESULTS[team] = {};
+        for (const [k, v] of Object.entries(res)) {
+          if (v === true) RESULTS[team][k] = true;
+          else if (!(k in RESULTS[team])) RESULTS[team][k] = v;
+        }
+      }
+    }
+    lastUpdated = new Date();
+  } catch(e) {
+    if (e.message && e.message.includes('401')) {
+      errorMsg = 'Invalid API key. Tap 🔑 to update it.';
+    } else {
+      errorMsg = 'Could not fetch live data — showing last known results.';
+    }
+    console.error(e);
+  }
+
+  isLoading = false;
+  if (btn) btn.textContent = '↻ Refresh';
+  render();
+
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(fetchAndRender, REFRESH_MS);
+}
+
+// ── Render ───────────────────────────────────────────────────────
+function render() {
+  const key = getKey();
+  const lb = buildLB();
+  const totalShares = lb.reduce((s,p) => s+p.shares, 0);
+  const maxShares = Math.max(...lb.map(p=>p.shares), 1);
+  const aliveTotal = lb.reduce((s,p) => s+p.aliveCount, 0);
+
+  const statusEl = document.getElementById('status-text');
+  if (statusEl) {
+    statusEl.textContent = lastUpdated
+      ? `Live · updated ${lastUpdated.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · R32 in progress`
+      : 'R64 complete · R32 in progress · Mar 21';
+  }
+
+  let h = '';
+
+  // API key banner if no key set
+  if (!key) {
+    h += `<div class="api-banner">
+      <div class="api-banner-title">🔑 Enter your Anthropic API key to enable live scores</div>
+      <div class="api-banner-desc">Your key is saved locally on this device only — never shared. Get one free at console.anthropic.com.</div>
+      <div class="api-input-row">
+        <input class="api-input" id="api-key-input" type="password" placeholder="sk-ant-..." />
+        <button class="api-save-btn" onclick="handleSaveKey()">Save &amp; Go Live</button>
+      </div>
+    </div>`;
+  }
+
+  if (errorMsg) {
+    h += `<div class="err-banner">${errorMsg}</div>`;
+  }
+
+  // Metrics
+  h += `<div class="metrics">
+    <div class="metric"><div class="metric-label">Pool</div><div class="metric-value">$${TOTAL_SPEND.toFixed(0)}</div><div class="metric-sub">total auction</div></div>
+    <div class="metric"><div class="metric-label">Leader</div><div class="metric-value">${lb[0].name.charAt(0).toUpperCase()+lb[0].name.slice(1)}</div><div class="metric-sub">${lb[0].shares} shares · ${((lb[0].shares/TOTAL_SHARES)*100).toFixed(0)}% of pool</div></div>
+    <div class="metric"><div class="metric-label">Shares earned</div><div class="metric-value">${totalShares}</div><div class="metric-sub">of 187 possible</div></div>
+    <div class="metric"><div class="metric-label">Teams alive</div><div class="metric-value">${aliveTotal}</div><div class="metric-sub">still in tournament</div></div>
+  </div>`;
+
+  // Player leaderboard
+  h += `<div class="cards">`;
+  lb.forEach((p, i) => {
+    const c = COLORS[p.name]||{bg:'#eee',fg:'#555'};
+    const pct = (p.shares/maxShares*100).toFixed(1);
+    const exp_payout = (p.shares/TOTAL_SHARES)*TOTAL_SPEND;
+    const roi = ((exp_payout - p.spend)/p.spend*100);
+    const roiStr = (roi>=0?'+':'')+roi.toFixed(0)+'% ROI';
+    const roiCls = roi>5?'roi-pos':roi<-5?'roi-neg':'roi-neu';
+    const init = p.name.slice(0,2).toUpperCase();
+    const isOpen = expanded[p.name];
+    const disp = p.name.charAt(0).toUpperCase()+p.name.slice(1);
+
+    h += `<div class="card">
+      <div class="card-header" onclick="tog('${p.name}')">
+        <div class="card-row">
+          <div class="rank ${RANK_CLS[i]}">${i+1}</div>
+          <div class="avatar" style="background:${c.bg};color:${c.fg}">${init}</div>
+          <div style="flex:1;min-width:0">
+            <div class="pname">${disp}</div>
+            <div class="psub">${p.total} teams · $${p.spend.toFixed(0)} spent · ${p.aliveCount} alive</div>
+          </div>
+          <div class="card-right">
+            <div class="pts-big">${p.shares}</div>
+            <div class="pts-lbl">shares</div>
+            <div class="roi-badge ${roiCls}">${roiStr}</div>
+          </div>
+        </div>
+        <div class="progress"><div class="progress-fill" style="width:${pct}%;background:${c.fg}"></div></div>
+        <div class="toggle-hint">${isOpen?'▲ hide':'▼ show teams'}</div>
+      </div>
+      <div class="card-detail ${isOpen?'open':''}">`;
+
+    if (p.scoring.length) {
+      h += `<div class="detail-sec"><div class="sec-title">Scoring <span>${p.scoring.length} teams</span></div><div class="team-list">`;
+      p.scoring.forEach(x => {
+        const s = pts(x.t), rl = roundLabel(x.t);
+        h += `<div class="trow scoring"><span class="tname">${x.t}${rl?`<span class="rpill">${rl}</span>`:''}</span><span class="tval">+${s} pts</span></div>`;
+      });
+      h += `</div></div>`;
+    }
+    if (p.stillAlive.length) {
+      h += `<div class="detail-sec"><div class="sec-title">Still alive — no wins yet <span>${p.stillAlive.length}</span></div><div class="team-list">`;
+      p.stillAlive.forEach(x => { h += `<div class="trow alive"><span class="tname">${x.t}</span><span class="tval">$${x.c.toFixed(2)}</span></div>`; });
+      h += `</div></div>`;
+    }
+    if (p.elim.length) {
+      h += `<div class="detail-sec"><div class="sec-title">Eliminated <span>${p.elim.length}</span></div><div class="team-list">`;
+      p.elim.forEach(x => { h += `<div class="trow elim"><span class="tname">${x.t}</span><span class="tval">$${x.c.toFixed(2)}</span></div>`; });
+      h += `</div></div>`;
+    }
+    h += `</div></div>`;
+  });
+  h += `</div>`;
+
+  // Bonus awards — blowout victim first (confirmed likely), upset at bottom (unconfirmed)
+  h += `<div class="section-card">
+    <div class="section-head">Bonus Awards · 1 share each</div>
+    <div class="bonus-row">
+      <div class="bicon">💥</div>
+      <div>
+        <div class="btitle">Biggest blowout victim</div>
+        <div class="bdesc">The team that loses by the largest margin wins this. Current leader: Lehigh lost to Florida by 59 pts — 2nd largest margin in tournament history.</div>
+        <div class="bwinner w-likely">⟳ Likely Sanjay (owns Lehigh) · pending end of tournament</div>
+      </div>
+    </div>
+    <div class="bonus-row">
+      <div class="bicon">🌀</div>
+      <div>
+        <div class="btitle">Lowest seed in Final Four</div>
+        <div class="bdesc">Awarded to the owner of the lowest-seeded team to reach the Final Four.</div>
+        <div class="bwinner w-tbd">TBD — tournament in progress</div>
+      </div>
+    </div>
+    <div class="bonus-row">
+      <div class="bicon">🏆</div>
+      <div>
+        <div class="btitle">Biggest upset</div>
+        <div class="bdesc">Current leader: High Point (#12) over Wisconsin (#5) — 7-seed differential. A larger upset could still happen.</div>
+        <div class="bwinner w-likely">⟳ Currently Sanjay (owns High Point) · not yet confirmed</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Today's R32 games
+  const GAMES = [
+    {t:'Michigan vs Saint Louis',  score:'Michigan 95–72 ✓', owners:'Lee / Jack',    done:true},
+    {t:'Michigan St. vs Louisville',time:'2:45p CBS',         owners:'Jack / Lee',    done:false},
+    {t:'Duke vs TCU',               time:'5:15p CBS',         owners:'Jack / Lee',    done:false},
+    {t:'Houston vs Texas A&M',      time:'6:10p TNT',         owners:'Lee / Jack',    done:false},
+    {t:'Gonzaga vs Texas',          time:'7:10p TBS',         owners:'Lee / Jack',    done:false},
+    {t:'Illinois vs VCU',           time:'7:50p CBS',         owners:'Lee / Jack',    done:false},
+    {t:'Nebraska vs Vanderbilt',    time:'8:45p TNT',         owners:'Jack / nathan', done:false},
+    {t:'Arkansas vs High Point',    time:'9:45p TBS',         owners:'Lee / Sanjay',  done:false},
+  ];
+  h += `<div class="section-card">
+    <div class="section-head">Today's R32 Games · Sat Mar 21</div>`;
+  GAMES.forEach(g => {
+    h += `<div class="game-row">
+      <div><div class="game-teams">${g.t}</div><div class="game-owners">${g.owners}</div></div>
+      <div>${g.done ? `<div class="game-score">${g.score}</div>` : `<div class="game-time">${g.time}</div>`}</div>
+    </div>`;
+  });
+  h += `</div>`;
+
+  if (lastUpdated) {
+    h += `<div class="last-updated">Last updated ${lastUpdated.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})} · Auto-refreshes every 5 min</div>`;
+  }
+
+  h += `<div class="footer-note">Scoring: 1pt R64 · 2pt R32 · 4pt S16 · 8pt E8 · 16pt F4 · 24pt Champ · 1pt each bonus. ROI = expected payout (current shares ÷ 187 × $${TOTAL_SPEND.toFixed(0)}) minus spend. Split teams: winner of First Four gets full credit.</div>`;
+
+  document.getElementById('body-wrap').innerHTML = h;
+}
+
+function tog(name) { expanded[name] = !expanded[name]; render(); }
+
+function handleSaveKey() {
+  const input = document.getElementById('api-key-input');
+  if (input && input.value.trim().startsWith('sk-')) {
+    saveKey(input.value.trim());
+    fetchAndRender();
+  } else {
+    alert('Please enter a valid Anthropic API key starting with sk-ant-...');
+  }
+}
+
+// Boot
+render();
+if (getKey()) fetchAndRender();
+</script>
+</body>
+</html>
